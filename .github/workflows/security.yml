@@ -22,8 +22,8 @@ jobs:
         with:
           repository: juice-shop/juice-shop
           path: target
-      - name: Run Semgrep
-        run: semgrep scan --config auto target/
+      - name: Run Semgrep (security gate)
+        run: semgrep scan --config auto --error target/
 
   trivy:
     runs-on: ubuntu-latest
@@ -33,15 +33,18 @@ jobs:
         with:
           repository: juice-shop/juice-shop
           path: target
-      - name: Run Trivy filesystem scan
+      - name: Run Trivy filesystem scan (security gate)
         run: |
           docker run --rm -v "$PWD/target:/src" aquasec/trivy:latest fs \
             --scanners vuln,misconfig,secret \
             --severity HIGH,CRITICAL \
+            --exit-code 1 \
             /src
-      - name: Run Trivy container image scan
+      - name: Run Trivy container image scan (security gate)
+        if: always()
         run: |
           docker run --rm aquasec/trivy:latest image \
             --scanners vuln \
             --severity CRITICAL \
+            --exit-code 1 \
             bkimminich/juice-shop:latest
