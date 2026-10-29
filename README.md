@@ -52,3 +52,10 @@ Target application: [OWASP Juice Shop](https://github.com/juice-shop/juice-shop)
 - **Issue:** A TLS private key is stored next to the certificate in the repo.
 - **Risk:** Anyone with repo access can impersonate the server or decrypt its traffic.
 - **Fix:** Keep keys out of version control, store them in a secrets manager, and rotate them.
+
+### 6. Critical vulnerable dependencies (Trivy image scan)
+- **Rule:** CVE-2015-9235 (jsonwebtoken), CVE-2019-10744 (lodash), CVE-2023-46233 (crypto-js)
+- **Issue:** The container image ships outdated packages, such as jsonwebtoken 0.1.0 and lodash 2.4.2.
+- **Risk:** An attacker can bypass token verification, pollute object prototypes, or break password hashing.
+- **Fix:** Upgrade to the fixed versions (jsonwebtoken 4.2.2, lodash 4.17.12, crypto-js 4.2.0), replace packages with no fix (decompress, marsdb), and fail the pipeline on new CRITICAL findings.
+- **Note:** The vulnerabilities in the target app are intentional, because Juice Shop is a training app.
