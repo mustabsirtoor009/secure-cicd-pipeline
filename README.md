@@ -38,6 +38,7 @@ Target application: [OWASP Juice Shop](https://github.com/juice-shop/juice-shop)
 | Files scanned | 1,193 |
 | Findings | 68 (all blocking) |
 | Secrets found (Gitleaks) | 0 |
+| Critical Node.js package vulnerabilities (Trivy image scan) | 11 |
 
 ### 4. Hardcoded private key in source (Trivy)
 - **Rule:** AsymmetricPrivateKey (HIGH)
