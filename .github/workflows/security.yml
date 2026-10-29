@@ -39,3 +39,9 @@ jobs:
             --scanners vuln,misconfig,secret \
             --severity HIGH,CRITICAL \
             /src
+      - name: Run Trivy container image scan
+        run: |
+          docker run --rm aquasec/trivy:latest image \
+            --scanners vuln \
+            --severity CRITICAL \
+            bkimminich/juice-shop:latest
