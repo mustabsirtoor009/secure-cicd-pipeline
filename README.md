@@ -60,3 +60,15 @@ Target application: [OWASP Juice Shop](https://github.com/juice-shop/juice-shop)
 - **Risk:** An attacker can bypass token verification, pollute object prototypes, or break password hashing.
 - **Fix:** Upgrade to the fixed versions (jsonwebtoken 4.2.2, lodash 4.17.12, crypto-js 4.2.0), replace packages with no fix (decompress, marsdb), and fail the pipeline on new CRITICAL findings.
 - **Note:** The vulnerabilities in the target app are intentional, because Juice Shop is a training app.
+
+## Security gate
+
+The pipeline fails the build when a scanner finds serious issues:
+
+| Scanner | Gate condition |
+|---|---|
+| Gitleaks | Any secret detected |
+| Semgrep | Any finding (`--error`) |
+| Trivy | Any HIGH or CRITICAL finding (`--exit-code 1`) |
+
+The target app, OWASP Juice Shop, is deliberately vulnerable, so the pipeline is expected to fail. A red run shows that the gate blocks insecure code. On a real project, the findings would be fixed until the run turns green.
