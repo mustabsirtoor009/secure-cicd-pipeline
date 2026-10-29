@@ -7,6 +7,7 @@ DevSecOps CI/CD pipeline with SAST, SCA, secret and IaC scanning using GitHub Ac
 |---|---|---|
 | Secret detection | Gitleaks | Finds hardcoded credentials in the repo |
 | SAST / IaC | Semgrep | Finds insecure code, workflow, and Terraform patterns |
+| Dependencies, IaC and secrets | Trivy | Finds vulnerable packages, misconfigurations, and hardcoded secrets |
 
 Target application: [OWASP Juice Shop](https://github.com/juice-shop/juice-shop), a deliberately vulnerable app.
 
@@ -37,3 +38,17 @@ Target application: [OWASP Juice Shop](https://github.com/juice-shop/juice-shop)
 | Files scanned | 1,193 |
 | Findings | 68 (all blocking) |
 | Secrets found (Gitleaks) | 0 |
+
+### 4. Hardcoded private key in source (Trivy)
+- **Rule:** AsymmetricPrivateKey (HIGH)
+- **Location:** `lib/insecurity.ts` line 21
+- **Issue:** An RSA private key is embedded in the application code.
+- **Risk:** An attacker can forge signed login tokens (JWTs) and impersonate any user.
+- **Fix:** Remove the key from code, load it from a secrets manager at runtime, and rotate it.
+
+### 5. Private key committed in Terraform (Trivy)
+- **Rule:** AsymmetricPrivateKey (HIGH)
+- **Location:** `terraform/networking.tf` line 171 (duplicated in `infrastructure/terraform/`)
+- **Issue:** A TLS private key is stored next to the certificate in the repo.
+- **Risk:** Anyone with repo access can impersonate the server or decrypt its traffic.
+- **Fix:** Keep keys out of version control, store them in a secrets manager, and rotate them.
