@@ -24,3 +24,18 @@ jobs:
           path: target
       - name: Run Semgrep
         run: semgrep scan --config auto target/
+
+  trivy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get target app (OWASP Juice Shop)
+        uses: actions/checkout@v4
+        with:
+          repository: juice-shop/juice-shop
+          path: target
+      - name: Run Trivy filesystem scan
+        run: |
+          docker run --rm -v "$PWD/target:/src" aquasec/trivy:latest fs \
+            --scanners vuln,misconfig,secret \
+            --severity HIGH,CRITICAL \
+            /src
