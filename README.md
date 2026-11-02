@@ -1,15 +1,40 @@
 # secure-cicd-pipeline
-DevSecOps CI/CD pipeline with SAST, SCA, secret and IaC scanning using GitHub Actions
+
+DevSecOps CI/CD pipeline with SAST, SCA, secret and IaC scanning using GitHub Actions.
 
 ## Pipeline overview
 
 | Stage | Tool | Purpose |
 |---|---|---|
-| Secret detection | Gitleaks | Finds hardcoded credentials in the repo |
-| SAST / IaC | Semgrep | Finds insecure code, workflow, and Terraform patterns |
-| Dependencies, IaC and secrets | Trivy | Finds vulnerable packages, misconfigurations, and hardcoded secrets |
+| Secret detection | Gitleaks | Finds hardcoded credentials in this repository |
+| SAST / IaC | Semgrep | Finds insecure code, workflow, and Terraform patterns in the target app |
+| Dependencies, IaC and secrets | Trivy | Finds vulnerable packages, misconfigurations, and hardcoded secrets in the target app and its container image |
 
-Target application: [OWASP Juice Shop](https://github.com/juice-shop/juice-shop), a deliberately vulnerable app.
+Target application: [OWASP Juice Shop](https://github.com/juice-shop/juice-shop), a deliberately vulnerable app. Semgrep and Trivy scan it (it is downloaded during each run), while Gitleaks scans this repository. That is why Gitleaks reports no secrets while Trivy finds private keys in Juice Shop.
+
+## Security gate
+
+The pipeline fails the build when a scanner finds serious issues:
+
+| Scanner | Gate condition |
+|---|---|
+| Gitleaks | Any secret detected |
+| Semgrep | Any finding (`--error`) |
+| Trivy | Any HIGH or CRITICAL finding (`--exit-code 1`) |
+
+Because the target app is deliberately vulnerable, the pipeline is expected to fail. A red run shows that the gate blocks insecure code. On a real project, the findings would be fixed until the run turns green.
+
+## Pipeline run
+
+## Scan results (first full run)
+
+| Metric | Value |
+|---|---|
+| Semgrep rules run | 408 |
+| Files scanned by Semgrep | 1,193 |
+| Semgrep findings | 68 (all blocking) |
+| Secrets found by Gitleaks (this repo) | 0 |
+| Critical Node.js package vulnerabilities (Trivy image scan) | 11 |
 
 ## Sample findings
 
@@ -17,7 +42,7 @@ Target application: [OWASP Juice Shop](https://github.com/juice-shop/juice-shop)
 - **Rule:** github-actions-mutable-action-tag
 - **Issue:** Actions referenced by tag (`@v2`) can be silently repointed by the owner.
 - **Risk:** Supply-chain attack that runs attacker code in CI.
-- **Fix:** Pin to a full commit SHA and keep the version in a comment.
+- **Fix:** Pin to a full commit SHA and keep the version in a comment. Applied in this repository's own workflow.
 
 ### 2. Curl piped into a shell
 - **Rule:** gha-curl-pipe-shell
@@ -30,15 +55,6 @@ Target application: [OWASP Juice Shop](https://github.com/juice-shop/juice-shop)
 - **Issue:** The ALB has no logging.
 - **Risk:** No evidence for incident response or detection.
 - **Fix:** Add an `access_logs` block that writes to S3.
-
-## Scan results (run #5)
-| Metric | Value |
-|---|---|
-| Rules run | 408 |
-| Files scanned | 1,193 |
-| Findings | 68 (all blocking) |
-| Secrets found (Gitleaks) | 0 |
-| Critical Node.js package vulnerabilities (Trivy image scan) | 11 |
 
 ### 4. Hardcoded private key in source (Trivy)
 - **Rule:** AsymmetricPrivateKey (HIGH)
@@ -58,17 +74,15 @@ Target application: [OWASP Juice Shop](https://github.com/juice-shop/juice-shop)
 - **Rule:** CVE-2015-9235 (jsonwebtoken), CVE-2019-10744 (lodash), CVE-2023-46233 (crypto-js)
 - **Issue:** The container image ships outdated packages, such as jsonwebtoken 0.1.0 and lodash 2.4.2.
 - **Risk:** An attacker can bypass token verification, pollute object prototypes, or break password hashing.
-- **Fix:** Upgrade to the fixed versions (jsonwebtoken 4.2.2, lodash 4.17.12, crypto-js 4.2.0), replace packages with no fix (decompress, marsdb), and fail the pipeline on new CRITICAL findings.
-- **Note:** The vulnerabilities in the target app are intentional, because Juice Shop is a training app.
+- **Fix:** Upgrade to the fixed versions (jsonwebtoken 4.2.2, lodash 4.17.12, crypto-js 4.2.0) and replace packages with no fix (decompress, marsdb).
 
-## Security gate
+## Hardening applied to this pipeline
 
-The pipeline fails the build when a scanner finds serious issues:
+- Third-party actions are pinned to full commit SHAs, with the version kept in a comment.
+- Dependabot opens weekly pull requests to update the pinned actions.
+- Trivy runs from its official Docker image instead of a third-party action.
 
-| Scanner | Gate condition |
-|---|---|
-| Gitleaks | Any secret detected |
-| Semgrep | Any finding (`--error`) |
-| Trivy | Any HIGH or CRITICAL finding (`--exit-code 1`) |
+## Limitations
 
-The target app, OWASP Juice Shop, is deliberately vulnerable, so the pipeline is expected to fail. A red run shows that the gate blocks insecure code. On a real project, the findings would be fixed until the run turns green.
+- The findings are documented, not fixed. The target app is a training app with intentional flaws.
+- The scanner Docker images (`semgrep/semgrep`, `aquasec/trivy:latest`) are not pinned by digest yet.
