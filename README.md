@@ -26,6 +26,13 @@ Because the target app is deliberately vulnerable, the pipeline is expected to f
 
 ## Pipeline run
 
+
+<img width="935" height="707" alt="image" src="https://github.com/user-attachments/assets/f917efbe-3fb3-48e0-b3de-55b04cb9a6f8" />
+
+
+The secret scan passes, while Semgrep and Trivy fail the build, because the target app is deliberately vulnerable.
+
+
 ## Scan results (first full run)
 
 | Metric | Value |
